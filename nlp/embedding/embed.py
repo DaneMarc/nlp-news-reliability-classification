@@ -54,7 +54,7 @@ class Embedding:
             doc_embedding = []
             for token in doc:
                 if token in self.model:
-                    doc_embedding.append(self.model.wv[token])
+                    doc_embedding.append(self.model[token])
                 else:
                     doc_embedding.append(np.zeros(300))
 

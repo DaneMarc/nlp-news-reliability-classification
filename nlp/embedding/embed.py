@@ -1,4 +1,3 @@
-import os
 import numpy as np
 import gensim.downloader as api
 
@@ -6,9 +5,10 @@ from gensim.models import Word2Vec, FastText
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 class Embedding:
-    def __init__(self, type='word2vec', max_seq_len=500, path=None, docs=[]):
+    def __init__(self, type='fasttext', max_seq_len=270, path=None):
         self.max_seq_len = max_seq_len
         self.type = type
+        self.dim_size = 300
 
         if type == 'word2vec':
             self.model = api.load('word2vec-google-news-300') if not path else Word2Vec.load(path).wv
@@ -43,7 +43,7 @@ class Embedding:
                             doc_embedding.append(self.model[token])
 
                 if len(doc_embedding) == 0:
-                    doc_embedding = np.zeros((300,))
+                    doc_embedding = np.zeros((self.dim_size,))
                 else:
                     if tfidf:
                         doc_embedding = np.average(doc_embedding, axis=0, weights=weights)
@@ -70,11 +70,11 @@ class Embedding:
                 if len(doc_embedding) > 0:
                     doc_embedding = self.pad(doc_embedding, weights)
                 else:
-                    doc_embedding = np.zeros((self.max_seq_len * 300))
+                    doc_embedding = np.zeros((self.max_seq_len * self.dim_size))
 
                 docs.append(doc_embedding)
         
-        length = 300 if doc_embed else 300 * self.max_seq_len
+        length = self.dim_size if doc_embed else self.dim_size * self.max_seq_len
 
         return docs, length
     
@@ -84,6 +84,7 @@ class Embedding:
             doc = np.array(doc)
             mean = np.mean(doc, axis=0)
             zeros = np.repeat([mean], self.max_seq_len - len(doc), axis=0)
+            #zeros = np.zeros((self.max_seq_len - len(doc), self.dim_size))
             doc = np.vstack((doc, zeros))
             return doc.flatten()
         elif len(doc) > self.max_seq_len:

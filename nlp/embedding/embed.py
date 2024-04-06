@@ -21,7 +21,7 @@ class Embedding:
 
     # input a list of tokens
     def get_embedding(self, docs, doc_embed=True, tfidf=False, sentiment=False):
-        docs = []
+        embedded_doc = []
 
         if tfidf:
             vectorizer = TfidfVectorizer(min_df=0, max_df=9999999)
@@ -50,7 +50,7 @@ class Embedding:
                     else:
                         doc_embedding = np.mean(doc_embedding, axis=0)
 
-                docs.append(doc_embedding)
+                embedded_doc.append(doc_embedding)
         else:
             for doc in docs:
                 doc_embedding = []
@@ -72,11 +72,11 @@ class Embedding:
                 else:
                     doc_embedding = np.zeros((self.max_seq_len * self.dim_size))
 
-                docs.append(doc_embedding)
+                embedded_doc.append(doc_embedding)
         
         length = self.dim_size if doc_embed else self.dim_size * self.max_seq_len
 
-        return docs, length
+        return embedded_doc, length
     
 
     def pad(self, doc, weights):

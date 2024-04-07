@@ -28,12 +28,12 @@ class Embedding:
             tfidf_scores = vectorizer.fit_transform(docs)
 
         if doc_embed:
-            for doc in docs:
+            for i, doc in enumerate(docs):
                 doc_embedding = []
 
                 if tfidf:
                     weights = []
-                    for i, token in enumerate(doc):
+                    for token in doc:
                         if token in self.model and token in vectorizer.vocabulary_:
                             doc_embedding.append(self.model[token])
                             weights.append(tfidf_scores[i, vectorizer.vocabulary_[token]])
@@ -52,12 +52,12 @@ class Embedding:
 
                 embedded_doc.append(doc_embedding)
         else:
-            for doc in docs:
+            for i, doc in enumerate(docs):
                 doc_embedding = []
                 weights = []
 
                 if tfidf:
-                    for i, token in enumerate(doc):
+                    for token in doc:
                         if token in self.model and token in vectorizer.vocabulary_:
                             tfidf_score = tfidf_scores[i, vectorizer.vocabulary_[token]]
                             doc_embedding.append(self.model[token] * tfidf_score)

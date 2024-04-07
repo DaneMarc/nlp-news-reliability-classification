@@ -8,8 +8,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 from nlp.embedding.embed import Embedding
-from nlp.models.mlp import MLP
-from nlp.models.lstm import LSTM
+from nlp.models.mlp import MLP, run_mlp
+from nlp.models.lstm import LSTM, run_lstm
 
 N_CLASSES = 4
 
@@ -107,4 +107,5 @@ def main(nEpochs=5, lr=0.00005):
 
 
 if __name__ == "__main__":
-    main()
+    # main()
+    run_lstm()

@@ -128,7 +128,14 @@ def run_mlp(nEpochs=5, lr=0.00005):
         print(f'''Val Scores.
                 Epoch: {i} | Min Train Loss: {minLoss} | Avg Train Loss: {avgLoss}
                 Accuracy: {acc:.4f} | Precision: {precision:.4f} | Recall: {recall:.4f} | F1: {f1:.4f} | ROC: {roc:.4f}''')
-        
+    
+    # Generate prediction on test data
+    test_dataset = CustomDataset(torch.tensor(x_test, dtype=torch.float32), torch.tensor(y_test, dtype=torch.long))
+    test_loader = DataLoader(test_dataset, batch_size=64, shuffle=True)
+    f1, precision, recall, acc, roc = test(test_loader)
+    print(f'''Test Scores.
+            Accuracy: {acc:.4f} | Precision: {precision:.4f} | Recall: {recall:.4f} | F1: {f1:.4f} | ROC: {roc:.4f}''')    
+    
     # Visualisation of loss.
     losses_float = [float(loss) for loss in losses] 
     loss_indices = [i for i,l in enumerate(losses_float)] 
@@ -144,10 +151,3 @@ def run_mlp(nEpochs=5, lr=0.00005):
     pdnumsqr = pd.DataFrame(d)
     sns.lineplot(x='epoch', y='value', hue='variable', data=pd.melt(pdnumsqr, ['epoch']))
     plt.show()
-        
-    # Generate prediction on test data
-    test_dataset = CustomDataset(torch.tensor(x_test, dtype=torch.float32), torch.tensor(y_test, dtype=torch.long))
-    test_loader = DataLoader(test_dataset, batch_size=64, shuffle=True)
-    f1, precision, recall, acc, roc = test(test_loader)
-    print(f'''Test Scores.
-            Accuracy: {acc:.4f} | Precision: {precision:.4f} | Recall: {recall:.4f} | F1: {f1:.4f} | ROC: {roc:.4f}''')

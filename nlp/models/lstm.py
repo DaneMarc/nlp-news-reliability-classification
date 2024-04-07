@@ -59,12 +59,12 @@ def run_lstm(nEpochs=5, lr=0.00005):
     softmax = torch.nn.Softmax(dim=0)
     
     embed = Embedding(type='word2vec')
-    train_data, test_data = pd.read_csv('nlp/models/way1_train_modified.csv').sample(frac=1), pd.read_csv('nlp/models/way1_test.csv')
+    train_data, test_data = pd.read_csv('nlp/models/way1_train.csv').sample(frac=1), pd.read_csv('nlp/models/way1_test.csv')
     freqCutOff = int(len(train_data['text_lowercase'])*0.8)
     x_train, x_val, x_test = train_data['text_lowercase'][:freqCutOff], train_data['text_lowercase'][freqCutOff:], test_data['text_lowercase']
-    x_train, dim = embed.get_embedding(x_train); print("x_train processing done");
-    x_val, dim = embed.get_embedding(x_val); print("x_val processing done");
-    x_test, dim = embed.get_embedding(x_test); print("x_test processing done");
+    x_train, dim = embed.get_embedding(x_train, doc_embed=False, flatten=False); print("x_train processing done");
+    x_val, dim = embed.get_embedding(x_val, doc_embed=False, flatten=False); print("x_val processing done");
+    x_test, dim = embed.get_embedding(x_test, doc_embed=False, flatten=False); print("x_test processing done");
     y_train, y_val, y_test = [i-1 for i in train_data['Label'][:freqCutOff]], [i-1 for i in train_data['Label'][freqCutOff:]], [i-1 for i in test_data['Label']]
     
     # Helper functions for training, testing, and generating word vectors
@@ -76,7 +76,7 @@ def run_lstm(nEpochs=5, lr=0.00005):
             
             optimizer.zero_grad()
             out = model(x)
-            print(x.size(), out.size(), y.size())
+            # print(x.size(), out.size(), y.size())
             loss = criterion(out, y)
             loss.backward()
             optimizer.step()
@@ -126,6 +126,13 @@ def run_lstm(nEpochs=5, lr=0.00005):
                 Epoch: {i} | Min Train Loss: {minLoss} | Avg Train Loss: {avgLoss}
                 Accuracy: {acc:.4f} | Precision: {precision:.4f} | Recall: {recall:.4f} | F1: {f1:.4f} | ROC: {roc:.4f}''')
         
+    # Generate prediction on test data
+    test_dataset = CustomDataset(torch.tensor(x_test, dtype=torch.float32), torch.tensor(y_test, dtype=torch.long))
+    test_loader = DataLoader(test_dataset, batch_size=64, shuffle=True)
+    f1, precision, recall, acc, roc = test(test_loader)
+    print(f'''Test Scores.
+            Accuracy: {acc:.4f} | Precision: {precision:.4f} | Recall: {recall:.4f} | F1: {f1:.4f} | ROC: {roc:.4f}''')
+    
     # Visualisation of loss.
     losses_float = [float(loss) for loss in losses] 
     loss_indices = [i for i,l in enumerate(losses_float)] 
@@ -141,10 +148,3 @@ def run_lstm(nEpochs=5, lr=0.00005):
     pdnumsqr = pd.DataFrame(d)
     sns.lineplot(x='epoch', y='value', hue='variable', data=pd.melt(pdnumsqr, ['epoch']))
     plt.show()
-        
-    # Generate prediction on test data
-    test_dataset = CustomDataset(torch.tensor(x_test, dtype=torch.float32), torch.tensor(y_test, dtype=torch.long))
-    test_loader = DataLoader(test_dataset, batch_size=64, shuffle=True)
-    f1, precision, recall, acc, roc = test(test_loader)
-    print(f'''Test Scores.
-            Accuracy: {acc:.4f} | Precision: {precision:.4f} | Recall: {recall:.4f} | F1: {f1:.4f} | ROC: {roc:.4f}''')

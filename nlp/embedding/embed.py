@@ -20,7 +20,7 @@ class Embedding:
             print('Invalid type')
 
     # input a list of tokens
-    def get_embedding(self, docs, doc_embed=True, tfidf=False, sentiment=False):
+    def get_embedding(self, docs, doc_embed=True, tfidf=False, sentiment=False, flatten=True):
         embedded_doc = []
 
         if tfidf:
@@ -68,7 +68,7 @@ class Embedding:
                             doc_embedding.append(self.model[token])
 
                 if len(doc_embedding) > 0:
-                    doc_embedding = self.pad(doc_embedding, weights)
+                    doc_embedding = self.pad(doc_embedding, weights, flatten)
                 else:
                     doc_embedding = np.zeros((self.max_seq_len * self.dim_size))
 
@@ -79,25 +79,26 @@ class Embedding:
         return embedded_doc, length
     
 
-    def pad(self, doc, weights):
+    def pad(self, doc, weights, flatten):
         if len(doc) < self.max_seq_len:
             doc = np.array(doc)
             mean = np.mean(doc, axis=0)
             zeros = np.repeat([mean], self.max_seq_len - len(doc), axis=0)
             #zeros = np.zeros((self.max_seq_len - len(doc), self.dim_size))
             doc = np.vstack((doc, zeros))
-            return doc.flatten()
+            return doc.flatten() if flatten else doc
         elif len(doc) > self.max_seq_len:
             # clip
             #return np.array(self.tfidf_clip(doc, weights)).flatten()
-            return np.array(doc[:self.max_seq_len]).flatten()
+            doc = np.array(doc[:self.max_seq_len])
+            return doc.flatten() if flatten else doc
 
             # pca
             #doc = np.array(doc).T
             #doc = self.pca.fit_transform(doc)
             #return doc.T.flatten()
         else:
-            return np.array(doc).flatten()
+            return np.array(doc).flatten() if flatten else np.array(doc)
         
     def tfidf_clip(self, doc, weights):
         new_doc = []

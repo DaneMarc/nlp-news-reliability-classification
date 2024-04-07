@@ -1,31 +1,33 @@
 import numpy as np
-import fasttext
-import fasttext.util
+#import fasttext
+#import fasttext.util
 
 from tqdm import tqdm
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import PCA
+from gensim.models import KeyedVectors
 
 class Embedding:
     def __init__(self, max_seq_len=163, path=None):
         self.max_seq_len = max_seq_len
         self.type = type
-        self.dim_size = 100
+        self.dim_size = 300
         self.pca = PCA(n_components=self.max_seq_len)
 
+        #fasttext.util.download_model('en', if_exists='ignore')
+        #self.model = fasttext.load_model('../../wiki.simple.100.bin')
+        #self.model = fasttext.load_model('cc.en.300.bin')
         if path:
-            self.model = fasttext.load_model(path)
+            self.model = KeyedVectors.load(path)
         else:
-            #fasttext.util.download_model('en', if_exists='ignore')
-            self.model = fasttext.load_model('../../wiki.simple.100.bin')
-            #self.model = fasttext.load_model('cc.en.300.bin')
+            self.model = KeyedVectors.load('cc.en.300.kv')
 
 
     # input a list of tokens
     def get_embedding(self, docs, doc_embed=True, tfidf=False, sentiment=False, tfidf_clip=False, pca=False, flatten=False):
         embedded_docs = []
-        flattened = [[j for sub in doc for j in sub] for doc in docs.iloc[:, 2]]
+        flattened = [[j for sub in doc for j in sub] for doc in docs.iloc[:,-1]]
 
         if tfidf:
             vectorizer = TfidfVectorizer(min_df=0, max_df=9999999, lowercase=False, token_pattern=r'(?u)(?<!\S)\S+(?!\S)')
@@ -34,7 +36,6 @@ class Embedding:
         if sentiment:
             vader = SentimentIntensityAnalyzer()
 
-        print(len(docs))
         for j, doc in tqdm(docs.iterrows(), total=docs.shape[0]):
             doc_embedding = []
             tfidf_weights = []
@@ -42,8 +43,8 @@ class Embedding:
             tokens = flattened[j]
 
             if sentiment:
-                sentences = doc.iloc[1]
-                sent_tokens = doc.iloc[2]
+                sentences = doc.iloc[:,-2]
+                sent_tokens = doc.iloc[:,-1]
                 for i, sentence in enumerate(sentences):
                     score = vader.polarity_scores(sentence)['compound']
                     if score == 0:

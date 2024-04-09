@@ -108,5 +108,5 @@ def main(nEpochs=5, lr=0.00005):
 
 if __name__ == "__main__":
     # main()
-    # run_mlp()
-    run_lstm()
+    run_mlp()
+    # run_lstm()

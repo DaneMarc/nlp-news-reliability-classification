@@ -1,6 +1,5 @@
 import pandas as pd
-from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score, roc_auc_score, average_precision_score
-
+from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score, roc_auc_score
 from copy import deepcopy
 import random
 import warnings
@@ -58,7 +57,7 @@ def run_lstm(nEpochs=5, lr=0.00005):
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     softmax = torch.nn.Softmax(dim=0)
     
-    embed = Embedding(type='word2vec')
+    embed = Embedding()
     train_data, test_data = pd.read_csv('nlp/models/way1_train.csv').sample(frac=1), pd.read_csv('nlp/models/way1_test.csv')
     freqCutOff = int(len(train_data['text_lowercase'])*0.8)
     x_train, x_val, x_test = train_data['text_lowercase'][:freqCutOff], train_data['text_lowercase'][freqCutOff:], test_data['text_lowercase']

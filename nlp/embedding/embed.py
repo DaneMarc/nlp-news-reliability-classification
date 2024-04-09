@@ -8,19 +8,29 @@ from sklearn.decomposition import PCA
 from gensim.models import KeyedVectors
 
 class Embedding:
-    def __init__(self, max_seq_len=163, path=None):
+    def __init__(self, doc_embed=True, max_seq_len=100):
+        self.doc_embed = doc_embed
         self.max_seq_len = max_seq_len
-        self.type = type
-        self.dim_size = 300
         self.pca = PCA(n_components=self.max_seq_len)
 
-        if path:
-            self.model = KeyedVectors.load(path)
-        else:
+        if self.doc_embed:
+            self.dim_size = 300
             self.model = KeyedVectors.load('cc.en.300.kv')
+        else:
+            self.dim_size = 100
+            self.model = KeyedVectors.load('cc.en.100.kv')
 
-
-    def get_embedding(self, docs, doc_embed=True, tfidf=False, sentiment=False, tfidf_clip=False, pca=False, flatten=False):
+    '''
+    Flags
+    ------
+    tfidf: Tf-Idf weighted word embeddings
+    sentiment: Valence score weighted word embeddings
+    tfidf_clip: Only used for concatenated embeddings (doc_embed=False). Clips doc embeddings by using only the top n=max_seq_len words.
+    pca: Only used for concatenated embeddings (doc_embed=False). Uses PCA to reduce dimensionality along word axis.
+    normalize: Only used for doc embeddings (doc_embed=True). Normalizes tfidf/sentiment word embeddings.
+    flatten: Only used for concatenated embeddings (doc_embed=False). Flattens embedding to 1D.
+    '''
+    def get_embedding(self, docs, tfidf=False, sentiment=False, tfidf_clip=False, pca=False, normalize=False, flatten=False):
         embedded_docs = []
         flattened = [[j for sub in doc for j in sub] for doc in docs.iloc[:,-1]]
 
@@ -38,22 +48,20 @@ class Embedding:
             tokens = flattened[j]
 
             if sentiment:
-                sentences = doc.iloc[:,-2]
-                sent_tokens = doc.iloc[:,-1]
+                sentences = doc.iloc[-2]
+                sent_tokens = doc.iloc[-1]
                 for i, sentence in enumerate(sentences):
                     score = vader.polarity_scores(sentence)['compound']
                     if score == 0:
-                        score = 0.1
-                    if doc_embed:
-                        score = abs(score)
-                    sentiment_weights += [score] * len([tok for tok in sent_tokens[i] if tok in self.model]) # abs to make weight positive
-                print(sentiment_weights)
+                        score = 0.1 # smooth neutral sentences
+                    if self.doc_embed:
+                        score = abs(score) # abs to make weight positive and prevent 0 sum when getting mean
+                    sentiment_weights += [score] * len([tok for tok in sent_tokens[i] if tok in self.model])
 
             if tfidf:
                 for i, token in enumerate(tokens):
                     if token in self.model and token in vectorizer.vocabulary_:
                         tfidf_weights.append(tfidf_scores[j, vectorizer.vocabulary_[token]])
-                print(tfidf_weights)
                         
             if tfidf or sentiment:
                 k = 0
@@ -63,29 +71,37 @@ class Embedding:
                     weights = tfidf_weights
                 elif sentiment and not tfidf:
                     weights = sentiment_weights
-                else:
+                else: # tfidf and sentiment
                     weights = [a*b for a,b in zip(tfidf_weights, sentiment_weights)]
 
-                if tfidf:
-                    for token in tokens:
-                        if token in self.model and token in vectorizer.vocabulary_:
-                            doc_embedding.append(self.model[token] * weights[k])
-                            k += 1
-                else:
+                if normalize:
                     for token in tokens:
                         if token in self.model:
-                            doc_embedding.append(self.model[token] * weights[k])
-                            k += 1
+                            doc_embedding.append(self.model[token])
+                else:
+                    if tfidf:
+                        for token in tokens:
+                            if token in self.model and token in vectorizer.vocabulary_:
+                                doc_embedding.append(self.model[token] * weights[k])
+                                k += 1
+                    else:
+                        for token in tokens:
+                            if token in self.model:
+                                doc_embedding.append(self.model[token] * weights[k])
+                                k += 1
             else:
                 for token in tokens:
                     if token in self.model:
                         doc_embedding.append(self.model[token])
 
-            if doc_embed:
+            if self.doc_embed:
                 if len(doc_embedding) == 0:
                     doc_embedding = np.zeros((self.dim_size,))
                 else:
-                    doc_embedding = np.mean(doc_embedding, axis=0)
+                    if normalize:
+                        doc_embedding = np.average(doc_embedding, axis=0, weights=weights)
+                    else:
+                        doc_embedding = np.mean(doc_embedding, axis=0)
             else:
                 if len(doc_embedding) == 0:
                     if flatten:
@@ -97,31 +113,26 @@ class Embedding:
 
             embedded_docs.append(doc_embedding)
         
-        length = self.dim_size if doc_embed else self.dim_size * self.max_seq_len
-
-        return embedded_docs, length
+        #length = self.dim_size if self.doc_embed else self.dim_size * self.max_seq_len
+        return embedded_docs
     
 
     def pad(self, doc, weights, tfidf_clip=False, pca=False, flatten=True):
         if len(doc) < self.max_seq_len:
             doc = np.array(doc)
-            print(doc)
             zeros = np.zeros((self.max_seq_len - len(doc), self.dim_size))
             doc = np.vstack((doc, zeros))
-            print(doc)
         elif len(doc) > self.max_seq_len:
             if tfidf_clip and len(weights) > 0:
-                print('tfidf clipping')
+                #print('tfidf clipping')
                 doc = np.array(self.tfidf_clip(doc, weights))
             elif pca:
                 doc = np.array(doc).T
-                print(doc.shape)
                 doc = self.pca.fit_transform(doc)
-                print(doc.shape)
-                print('pca clipping')
+                #print('pca clipping')
                 doc = doc.T
             else:
-                print('normal clipping')
+                #print('normal clipping')
                 doc = np.array(doc[:self.max_seq_len])
         else:
             doc = np.array(doc)
@@ -142,14 +153,14 @@ class Embedding:
         return new_doc
     
 
-    def save_embedding(self, docs, doc_embed=True, tfidf=False, sentiment=False, tfidf_clip=False, pca=False, flatten=False, path=None):
-        embedded_docs, _ = self.get_embedding(docs, doc_embed, tfidf, sentiment, tfidf_clip, pca, flatten)
+    def save_embedding(self, docs, tfidf=False, sentiment=False, tfidf_clip=False, pca=False, normalize=False, flatten=False, path=None):
+        embedded_docs, _ = self.get_embedding(docs, tfidf, sentiment, tfidf_clip, pca, normalize, flatten)
         new_docs = docs.drop(docs.columns[-len(docs.columns)+1:], axis=1, inplace=False)
         new_docs['embeddings'] = embedded_docs
 
         if path:
             new_docs.to_pickle(path)
         else:
-            string = f'data/{"doc" if doc_embed else "concat"}{"_tfidf" if tfidf else ""}{"_sent" if sentiment else ""}{"_tfidfClip" if tfidf_clip else ""}{"_pca" if pca else ""}{"_flat" if flatten else ""}.pkl'
+            string = f'data/{"doc" if self.doc_embed else "concat"}{"_tfidf" if tfidf else ""}{"_sent" if sentiment else ""}{"_tfidfClip" if tfidf_clip else ""}{"_pca" if pca else ""}{"_flat" if flatten else ""}.pkl'
             new_docs.to_pickle(string)
     

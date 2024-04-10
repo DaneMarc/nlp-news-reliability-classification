@@ -89,15 +89,16 @@ class Embedding:
             else:
                 if tfidf or sentiment:
                     k = 0
+                    weights = [w / total_weight for w in weights]
                     if tfidf:
                         for i, token in enumerate(tokens):
                             if token in self.model and token in vectorizer.vocabulary_:
-                                doc_embedding.append(self.model[token] * (weights[k]/total_weight))
+                                doc_embedding.append(self.model[token] * weights[k])
                                 k += 1
                     else:
                         for i, token in enumerate(tokens):
                             if token in self.model:
-                                doc_embedding.append(self.model[token] * (weights[k]/total_weight))
+                                doc_embedding.append(self.model[token] * weights[k])
                                 k += 1
                 else:
                     for token in tokens:

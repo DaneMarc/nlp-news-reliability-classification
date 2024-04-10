@@ -21,13 +21,13 @@ class Embedding:
             self.model = KeyedVectors.load('nlp/embedding/cc.en.100.kv')
 
     '''
-    Flags
+    flags
     ------
-    tfidf: Tf-Idf weighted word embeddings
-    sentiment: Valence score weighted word embeddings
-    tfidf_clip: Only used for concatenated embeddings (doc_embed=False). Clips doc embeddings by using only the top n=max_seq_len words.
-    pca: Only used for concatenated embeddings (doc_embed=False). Uses PCA to reduce dimensionality along word axis.
-    flatten: Only used for concatenated embeddings (doc_embed=False). Flattens embedding to 1D.
+    tfidf: tf-idf weighted word embeddings
+    sentiment: valence score weighted word embeddings
+    tfidf_clip: only used for concatenated embeddings (doc_embed=False); clips doc embeddings by using only the top n=max_seq_len words
+    pca: only used for concatenated embeddings (doc_embed=False); uses PCA to reduce dimensionality along word axis
+    flatten: only used for concatenated embeddings (doc_embed=False); flattens embedding to 1D
     '''
     def get_embedding(self, docs, tfidf=False, sentiment=False, tfidf_clip=False, pca=False, flatten=False):
         embedded_docs = []
@@ -56,9 +56,10 @@ class Embedding:
                     if self.doc_embed:
                         score = abs(score) # abs to make weight positive and prevent 0 sum when getting mean
                     if tfidf:
-                        sentiment_weights += [score] * len([tok for tok in sent_tokens[i] if tok in self.model and tok in vectorizer.vocabulary_])
+                        n = len([tok for tok in sent_tokens[i] if tok in self.model and tok in vectorizer.vocabulary_])
                     else:
-                        sentiment_weights += [score] * len([tok for tok in sent_tokens[i] if tok in self.model])
+                        n = len([tok for tok in sent_tokens[i] if tok in self.model])
+                    sentiment_weights += [score] * n
 
             if tfidf:
                 for i, token in enumerate(tokens):
@@ -91,12 +92,12 @@ class Embedding:
                     k = 0
                     weights = [w / total_weight for w in weights]
                     if tfidf:
-                        for i, token in enumerate(tokens):
+                        for token in tokens:
                             if token in self.model and token in vectorizer.vocabulary_:
                                 doc_embedding.append(self.model[token] * weights[k])
                                 k += 1
                     else:
-                        for i, token in enumerate(tokens):
+                        for token in tokens:
                             if token in self.model:
                                 doc_embedding.append(self.model[token] * weights[k])
                                 k += 1

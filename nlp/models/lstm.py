@@ -13,7 +13,7 @@ from torch.utils.data import Dataset, DataLoader
 
 from ..embedding.embed import Embedding
 
-WV_SIZE = 300
+WV_SIZE = 100
 N_CLASSES = 4
 
 ###############################
@@ -58,13 +58,27 @@ def run_lstm(nEpochs=5, lr=0.00005):
     softmax = torch.nn.Softmax(dim=0)
     
     embed = Embedding()
-    train_data, test_data = pd.read_csv('nlp/models/way1_train.csv').sample(frac=1), pd.read_csv('nlp/models/way1_test.csv')
-    freqCutOff = int(len(train_data['text_lowercase'])*0.8)
-    x_train, x_val, x_test = train_data['text_lowercase'][:freqCutOff], train_data['text_lowercase'][freqCutOff:], test_data['text_lowercase']
-    x_train, dim = embed.get_embedding(x_train, doc_embed=False, flatten=False); print("x_train processing done");
-    x_val, dim = embed.get_embedding(x_val, doc_embed=False, flatten=False); print("x_val processing done");
-    x_test, dim = embed.get_embedding(x_test, doc_embed=False, flatten=False); print("x_test processing done");
-    y_train, y_val, y_test = [i-1 for i in train_data['Label'][:freqCutOff]], [i-1 for i in train_data['Label'][freqCutOff:]], [i-1 for i in test_data['Label']]
+
+    with open('nlp/models/dataset/way1/way1_train_concat.pkl', 'rb') as tr, open('nlp/models/dataset/way1/way1_test_concat.pkl', 'rb') as te:
+        train_data, test_data = pd.read_pickle(tr), pd.read_pickle(te)
+        print(train_data)
+
+    freqCutOff = int(len(train_data['embeddings'])*0.8)
+    x_combined, x_test = [[j for j in i] for i in train_data['embeddings']], [[j for j in i] for i in test_data['embeddings']]      
+    y_combined, y_test = [int(i)-1 for i in train_data['category']], [int(i)-1 for i in test_data['category']]
+    c = list(zip(x_combined, y_combined))
+    random.shuffle(c)
+    x_combined, y_combined = zip(*c)
+    x_train, x_val = x_combined[:freqCutOff], x_combined[freqCutOff:]
+    y_train, y_val = y_combined[:freqCutOff], y_combined[freqCutOff:]
+
+    # train_data, test_data = pd.read_csv('nlp/models/way1_train.csv').sample(frac=1), pd.read_csv('nlp/models/way1_test.csv')
+    # freqCutOff = int(len(train_data['text_lowercase'])*0.8)
+    # x_train, x_val, x_test = train_data['text_lowercase'][:freqCutOff], train_data['text_lowercase'][freqCutOff:], test_data['text_lowercase']
+    # x_train, dim = embed.get_embedding(x_train, doc_embed=False, flatten=False); print("x_train processing done");
+    # x_val, dim = embed.get_embedding(x_val, doc_embed=False, flatten=False); print("x_val processing done");
+    # x_test, dim = embed.get_embedding(x_test, doc_embed=False, flatten=False); print("x_test processing done");
+    # y_train, y_val, y_test = [i-1 for i in train_data['Label'][:freqCutOff]], [i-1 for i in train_data['Label'][freqCutOff:]], [i-1 for i in test_data['Label']]
     
     # Helper functions for training, testing, and generating word vectors
     def train(loader):

@@ -3,7 +3,6 @@ from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_sc
 
 from copy import deepcopy
 import random
-import pickle
 import warnings
 import torch
 import numpy as np
@@ -12,8 +11,6 @@ import matplotlib.pyplot as plt
 from torch.nn import Linear
 from torch.nn.functional import dropout
 from torch.utils.data import Dataset, DataLoader
-
-from ..embedding.embed import Embedding
 
 WV_SIZE = 300
 N_CLASSES = 4
@@ -63,11 +60,8 @@ def run_mlp(nEpochs=15, lr=0.00005):
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     softmax = torch.nn.Softmax(dim=0)
     
-    embed = Embedding()
-    
-    with open('nlp/models/dataset/way11/way11_train_doc.pkl', 'rb') as tr, open('nlp/models/dataset/way11/way11_test_doc.pkl', 'rb') as te:
-        train_data, test_data = pd.read_pickle(tr), pd.read_pickle(te)
-        print(train_data)
+    train_data = pd.read_pickle('nlp/models/dataset/way11/way11_train_doc.pkl')
+    test_data = pd.read_pickle('nlp/models/dataset/way11/way11_test_doc.pkl')
         
     freqCutOff = int(len(train_data['embeddings'])*0.8)
     x_combined, x_test = [[j for j in i] for i in train_data['embeddings']], [[j for j in i] for i in test_data['embeddings']]      

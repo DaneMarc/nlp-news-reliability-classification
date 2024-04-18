@@ -12,7 +12,7 @@ from torch.nn.functional import dropout
 from torch.utils.data import Dataset, DataLoader
 
 EMB_DIM = 100
-HIDDEN_DIM = 128
+HIDDEN_DIM = 100
 N_LAYERS = 1
 N_CLASSES = 4
 
@@ -47,7 +47,7 @@ class CustomDataset(Dataset):
 ######### MAIN METHOD #########
 ###############################
     
-def run_lstm(nEpochs=5, lr=0.00005):
+def run_lstm(nEpochs=5, lr=0.00005, dataset_way=7):
     warnings.filterwarnings("ignore")
     
     # Initialise
@@ -56,12 +56,13 @@ def run_lstm(nEpochs=5, lr=0.00005):
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     softmax = torch.nn.Softmax(dim=0)
     
-    train_data = pd.read_pickle('nlp/models/dataset/way11/way11_train_doc.pkl')
-    test_data = pd.read_pickle('nlp/models/dataset/way11/way11_test_doc.pkl')
-        
+    train_data = pd.read_pickle(f'embeddings/concat/way{dataset_way}_train_concat.pkl')
+    test_data = pd.read_pickle(f'embeddings/concat/way{dataset_way}_test_concat.pkl')
+    # print(train_data.head())
+    # print(f"Train data shape: {train_data.shape}, Test data shape: {test_data.shape}")
     freqCutOff = int(len(train_data['embeddings'])*0.8)
     x_combined, x_test = [[j for j in i] for i in train_data['embeddings']], [[j for j in i] for i in test_data['embeddings']]      
-    y_combined, y_test = [int(i)-1 for i in train_data['Label']], [int(i)-1 for i in test_data['Label']]
+    y_combined, y_test = [int(i)-1 for i in train_data['category']], [int(i)-1 for i in test_data['category']]
     c = list(zip(x_combined, y_combined))
     random.shuffle(c)
     x_combined, y_combined = zip(*c)
@@ -100,7 +101,7 @@ def run_lstm(nEpochs=5, lr=0.00005):
             f1, precision, recall, acc, roc = f1_score(labels, pred, average='macro'), precision_score(labels, pred, average='macro'), recall_score(labels, pred, average='macro'), accuracy_score(labels, pred), roc_auc_score(labels, probs, average='macro', multi_class='ovr')
         return f1, precision, recall, acc, roc
     
-    print("Starting training...")
+    # print("Starting training...")
     
     losses = []
     f1s, precisions, recalls, accs, rocs = [], [], [], [], []
@@ -133,18 +134,18 @@ def run_lstm(nEpochs=5, lr=0.00005):
     print(f'''Test Scores.
             Accuracy: {acc:.4f} | Precision: {precision:.4f} | Recall: {recall:.4f} | F1: {f1:.4f} | ROC: {roc:.4f}''')
     
-    # Visualisation of loss.
-    losses_float = [float(loss) for loss in losses] 
-    loss_indices = [i for i,l in enumerate(losses_float)] 
-    d = {'indices': np.array(loss_indices), 'loss': np.array(losses_float)}
-    pdnumsqr = pd.DataFrame(d)
-    sns.lineplot(x='indices', y='value', hue='variable', data=pd.melt(pdnumsqr, ['indices']))
-    # plt.ylim(0, 20)
-    plt.show()
+    # # Visualisation of loss.
+    # losses_float = [float(loss) for loss in losses] 
+    # loss_indices = [i for i,l in enumerate(losses_float)] 
+    # d = {'indices': np.array(loss_indices), 'loss': np.array(losses_float)}
+    # pdnumsqr = pd.DataFrame(d)
+    # sns.lineplot(x='indices', y='value', hue='variable', data=pd.melt(pdnumsqr, ['indices']))
+    # # plt.ylim(0, 20)
+    # plt.show()
     
-    # Visualisation of performance
-    epoch = [i for i in range(nEpochs)] 
-    d = {'epoch': np.array(epoch), 'ROC': np.array(rocs), 'F1': np.array(f1s), 'Precision': np.array(precisions), 'Recall': np.array(recalls), 'Accuracy': np.array(accs)}
-    pdnumsqr = pd.DataFrame(d)
-    sns.lineplot(x='epoch', y='value', hue='variable', data=pd.melt(pdnumsqr, ['epoch']))
-    plt.show()
+    # # Visualisation of performance
+    # epoch = [i for i in range(nEpochs)] 
+    # d = {'epoch': np.array(epoch), 'ROC': np.array(rocs), 'F1': np.array(f1s), 'Precision': np.array(precisions), 'Recall': np.array(recalls), 'Accuracy': np.array(accs)}
+    # pdnumsqr = pd.DataFrame(d)
+    # sns.lineplot(x='epoch', y='value', hue='variable', data=pd.melt(pdnumsqr, ['epoch']))
+    # plt.show()

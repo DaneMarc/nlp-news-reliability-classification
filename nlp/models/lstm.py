@@ -47,7 +47,7 @@ class CustomDataset(Dataset):
 ######### MAIN METHOD #########
 ###############################
     
-def run_lstm(nEpochs=5, lr=0.00005, dataset_way=7):
+def run_lstm(nEpochs=5, lr=0.00005, dataset_way=7, enhancement=""):
     warnings.filterwarnings("ignore")
     
     # Initialise
@@ -56,8 +56,8 @@ def run_lstm(nEpochs=5, lr=0.00005, dataset_way=7):
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     softmax = torch.nn.Softmax(dim=0)
     
-    train_data = pd.read_pickle(f'embeddings/concat/way{dataset_way}_train_concat.pkl')
-    test_data = pd.read_pickle(f'embeddings/concat/way{dataset_way}_test_concat.pkl')
+    train_data = pd.read_pickle(f'way{dataset_way}_train_concat{enhancement}.pkl')
+    test_data = pd.read_pickle(f'way{dataset_way}_test_concat{enhancement}.pkl')
     # print(train_data.head())
     # print(f"Train data shape: {train_data.shape}, Test data shape: {test_data.shape}")
     freqCutOff = int(len(train_data['embeddings'])*0.8)

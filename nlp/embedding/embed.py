@@ -8,7 +8,7 @@ from sklearn.decomposition import PCA
 from gensim.models import KeyedVectors
 
 class Embedding:
-    def __init__(self, doc_embed=True, max_seq_len=20):
+    def __init__(self, doc_embed=True, max_seq_len=100):
         self.doc_embed = doc_embed
         self.max_seq_len = max_seq_len
         self.pca = PCA(n_components=self.max_seq_len)
@@ -61,7 +61,7 @@ class Embedding:
                         n = len([tok for tok in sent_tokens[i] if tok in self.model])
                     sentiment_weights += [score] * n
 
-            if tfidf:
+            if tfidf or tfidf_clip:
                 for i, token in enumerate(tokens):
                     if token in self.model and token in vectorizer.vocabulary_:
                         tfidf_weights.append(tfidf_scores[j, vectorizer.vocabulary_[token]])
@@ -73,7 +73,6 @@ class Embedding:
                     weights = sentiment_weights
                 else: # tfidf and sentiment
                     weights = [a*b for a,b in zip(tfidf_weights, sentiment_weights)]
-                total_weight = sum(weights)
 
             if self.doc_embed:
                 for token in tokens:
@@ -90,7 +89,6 @@ class Embedding:
             else:
                 if tfidf or sentiment:
                     k = 0
-                    weights = [w / total_weight for w in weights]
                     if tfidf:
                         for token in tokens:
                             if token in self.model and token in vectorizer.vocabulary_:
@@ -126,15 +124,12 @@ class Embedding:
             doc = np.vstack((doc, zeros))
         elif len(doc) > self.max_seq_len:
             if tfidf_clip and len(weights) > 0:
-                #print('tfidf clipping')
                 doc = np.array(self.tfidf_clip(doc, weights))
             elif pca:
                 doc = np.array(doc).T
                 doc = self.pca.fit_transform(doc)
-                #print('pca clipping')
                 doc = doc.T
             else:
-                #print('normal clipping')
                 doc = np.array(doc[:self.max_seq_len])
         else:
             doc = np.array(doc)

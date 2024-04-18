@@ -1,4 +1,4 @@
-# Automated Detection of Misinformation in News Articles using TextCNN and LSTM Models
+# Automated Detection of Misinformation in News Articles
 
 Code for CS4248 Group Project (AY22/23 Sem 2) [[`code`](https://github.com/DaneMarc/nlp-news-reliability-classification)]
 
